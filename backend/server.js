@@ -16,6 +16,38 @@ app.use(
 app.use(cookieparser());
 
 /*-----------------------------------*
+ *         Database Connection       *
+ *-----------------------------------*/
+let dbConnectionPromise;
+
+const ensureDbConnection = async () => {
+  if (!dbConnectionPromise) {
+    dbConnectionPromise = connectDb()
+      .then(() => {
+        console.log('Database was connected');
+      })
+      .catch(err => {
+        console.error('Database Connect Failed!!', err);
+        dbConnectionPromise = null;
+        throw err;
+      });
+  }
+
+  await dbConnectionPromise;
+};
+
+/*-----------------------------------*
+ *        Database Middleware        *
+ *-----------------------------------*/
+app.use(async (req, res, next) => {
+  try {
+    await ensureDbConnection();
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+/*-----------------------------------*
  *         root middleware           *
  *-----------------------------------*/
 rootMiddleware(app);
@@ -45,19 +77,33 @@ app.use((err, req, res, next) => {
   });
 });
 
-const PORT = process.env.PORT;
-
 /*------------------------------------*
  *     connect DB and listen app      *
  *------------------------------------*/
-connectDb()
-  .then(() => {
-    console.log('Database was connected');
+// connectDb()
+//   .then(() => {
+//     console.log('Database was connected');
 
-    app.listen(PORT, () => {
-      console.log(`App is Running at http://localhost:${PORT}`);
-    });
-  })
-  .catch(err => {
-    console.error('Database Connect Failed!!', err);
+//     app.listen(PORT, () => {
+//       console.log(`App is Running at http://localhost:${PORT}`);
+//     });
+//   })
+//   .catch(err => {
+//     console.error('Database Connect Failed!!', err);
+//   });
+
+/*------------------------------------*
+ *          Local Development        *
+ *------------------------------------*/
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 5000;
+
+  app.listen(PORT, () => {
+    console.log(`App is Running at http://localhost:${PORT}`);
   });
+}
+
+/*------------------------------------*
+ *          Vercel Export             *
+ *------------------------------------*/
+module.exports = app;
