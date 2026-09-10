@@ -12,10 +12,6 @@ const sendResponse = require('../libs/sendResponse');
 
 const generateInvoiceHTML = require('../libs/invoiceTemplate');
 
-const isProd = process.env.NODE_ENV === 'production';
-const puppeteer = isProd ? require('puppeteer-core') : require('puppeteer');
-const chromium = isProd ? require('@sparticuz/chromium') : null;
-
 /**
  *
  *
@@ -203,11 +199,28 @@ const deleteInvoiceById = async (req, res) => {
  *                                         *
  * ----------------------------------------*/
 
+/*-----------------------------------------*
+ *                                         *
+ *  DOWNLOAD INVOICE                       *
+ *                                         *
+ * ----------------------------------------*/
+
 const invoiceDownload = async (req, res) => {
+  const generateInvoiceHTML = require('../libs/invoiceTemplate');
+
+  const isProd = process.env.NODE_ENV === 'production';
+
+  const chromium = isProd ? require('@sparticuz/chromium') : null;
+
   let browser = null;
+
   try {
     const invoice = req.body;
     const html = generateInvoiceHTML(invoice);
+
+    const puppeteer = isProd
+      ? (await import('puppeteer-core')).default
+      : (await import('puppeteer')).default;
 
     browser = isProd
       ? await puppeteer.launch({
@@ -222,19 +235,31 @@ const invoiceDownload = async (req, res) => {
         });
 
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
 
-    const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
+    await page.setContent(html, {
+      waitUntil: 'networkidle0',
+    });
+
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+    });
+
     await browser.close();
+    browser = null;
 
     res.set({
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename=invoice-${invoice.invoiceNo}.pdf`,
       'Content-Length': pdfBuffer.length,
     });
-    res.send(pdfBuffer);
+
+    return res.send(pdfBuffer);
   } catch (err) {
-    if (browser) await browser.close();
+    if (browser) {
+      await browser.close();
+    }
+
     return sendResponse(
       res,
       500,
