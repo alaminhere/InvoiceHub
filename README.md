@@ -164,7 +164,7 @@ InvoiceHub/
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/alamin-one/InvoiceHub.git
+git clone https://github.com/alaminhere/InvoiceHub.git
 ```
 
 ### Navigate to the Project
@@ -234,7 +234,7 @@ CLOUDINARY_API_SECRET=
 ## Developed By
 
 **Al-Amin** GitHub:
-[https://github.com/alamin-one](https://github.com/alamin-one)
+[https://github.com/alaminhere](https://github.com/alaminhere)
 
 ---
 
